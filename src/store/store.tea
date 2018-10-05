@@ -1,0 +1,57 @@
+import {PureComponent} from "react"
+import {createStore, combineReducers} from "redux"
+import update from "immutable-update-values"
+import {batchReducer} from "redux-batching"
+
+import Inventory from "../screen/Inventory.tea"
+
+import itemSource from "../items.js"
+
+let batched = (target, name, desc) => {
+    desc.value = batchReducer(desc.value)
+    return desc
+}
+
+let testItems = [
+    {name: "Herbs", count: 5, weight: 0.25}
+    {name: "Sword", count: 2, weight: 2}
+    {name: "Backpack", count: 1, weight: null, items: [
+        {name: "Candle", count: 3, weight: 0.5}
+        {name: "Bag of Holding", weight: 5, items: [
+            {name: "Kobold Skull", count: 2, weight: 0}
+        ]}
+    ]}
+]
+let items = (state = testItems, action) => switch action.type {
+    case "items.add" {
+        break update(
+            state,
+            {$push: {
+                guid: Date.now()
+                count: 0
+                action.item
+            }}
+        )
+    }
+    default {
+        break state
+    }
+}
+
+let itemList = (state = null, action) => state ?? itemSource
+
+let screen = (state = Inventory, action) =>
+    if action.type == "screen.change" {
+        break action.screen
+    }
+    else {
+        break state
+    }
+
+export default createStore(
+    combineReducers({
+        @batched items
+        @batched itemList
+        @batched screen
+    })
+)

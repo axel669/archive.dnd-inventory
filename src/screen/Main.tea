@@ -1,0 +1,37 @@
+import React, {Component, PureComponent} from "react"
+import doric from "doric-components"
+
+// import ItemList from "./ItemList.coffee"
+
+import yggdrasil from "../yggdrasil.tea"
+
+let connect = (store) =>
+    (Parent) => class extends Component {
+        static displayName = "Connected<${Parent.name ?? Parent.displayName}>"
+
+        constructor(props) => {
+            super(props)
+            @state = store.getState()
+            store.subscribe(
+                () => @setState(store.getState())
+            )
+        }
+
+        render() => <Parent {...@state} />
+    }
+
+@connect(yggdrasil.store)
+// @doric.dialogify
+class Main extends PureComponent {
+    render() => {
+        let Screen = this.props.screen
+        let props = Screen.propList.reduce(
+            (p, name) => {[name]: @props[name]}
+            {}
+        )
+
+        return <Screen {...props} />
+    }
+}
+
+export default Main

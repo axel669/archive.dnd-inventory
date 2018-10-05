@@ -1,0 +1,28 @@
+import update from "immutable-update-values"
+import {gen} from "redux-batching"
+
+import store from "./store.tea"
+
+let {batch, action} = gen(store)
+
+let pass = (...names) =>
+    (...args) => names.reduce(
+        (item, name, index) => {
+            ...item,
+            [name]: args[index]
+        }
+        {}
+    )
+
+let actions = Object.entries({
+    "items.add": pass("item")
+    "screen.change": pass("screen")
+}).reduce(
+    (mod, [key, value]) => {
+        ...mod,
+        "${key}.$set": action(key, value)
+    }
+    {}
+)
+
+export default update({batch}, actions, true)
