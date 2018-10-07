@@ -137,15 +137,23 @@ sheet.addStyles({
         border: "1px solid lightgray"
         position: "relative"
     }
-    "item-card[container]::before": {
-        position: "absolute"
-        content: "\"\""
-        top: 0
-        left: 0
-        width: "100%"
-        height: "100%"
-        backgroundColor: "cyan"
+    "item-card[container]": {
+        // backgroundColor: "#75cece"
+        border: "1px solid black"
     }
+    // "item-card[container] *": {
+    //     zIndex: 1
+    // }
+    // "item-card[container]::before": {
+    //     position: "absolute"
+    //     content: "\"\""
+    //     top: 0
+    //     left: 0
+    //     width: "100%"
+    //     height: "100%"
+    //     backgroundColor: "rgba(0, 255, 255, 0.1)"
+    //     zIndex: 0
+    // }
     "item-card-title": {
         margin: "2px 2px 4px 2px"
         display: "block"
@@ -157,7 +165,10 @@ sheet.addStyles({
         margin: 8
     }
     "item-expandable": {
+        display: "block"
         backgroundColor: "white"
+        borderRadius: 3
+        paddingBottom: 4
     }
 })
 let Card = ({children, ...props}) => <item-card {...props}>
@@ -191,6 +202,22 @@ class Expandable extends PureComponent {
     }
 }
 
+sheet.addStyles({
+    "item-grid": {
+        display: "grid"
+        // gridTemplateAreas: "
+        //     \"d a a b\"
+        //     \"d c c b\"
+        //     ;"
+        gridTemplateColumns: "auto auto auto auto"
+        gridAutoRows: 30
+    }
+    "item-grid > div": {
+        display: "flex"
+        alignItems: "center"
+        justifyContent: "middle"
+    }
+})
 class Item extends PureComponent {
     render() => {
         let item = @props.item
@@ -198,8 +225,17 @@ class Item extends PureComponent {
             <Card.title main=item.name />
 
             <Card.content>
-                <div>Count: {item.count}</div>
-                <div>Weight: {item.count * item.weight} ({item.weight} each)</div>
+                <item-grid>
+                    <div>Count</div>
+                    <div>{item.count}</div>
+                    <doric.button text="+1" flush />
+                    <doric.button text="-1" flush />
+
+                    <div>Weight</div>
+                    <div>{item.count * item.weight}</div>
+                    <doric.button text="+X" />
+                    <doric.iconButton icon="ion-trash-b" />
+                </item-grid>
             </Card.content>
         </Card>
     }
@@ -227,6 +263,15 @@ class Display extends Component {
     }
 }
 
+let itemAddStyle = {
+    position: "absolute"
+    bottom: 0
+    right: 0
+    top: "auto"
+    left: "auto"
+    width: 40
+    height: 40
+}
 class Inventory2 extends PureComponent {
     static propList = ["items"]
 
@@ -237,6 +282,8 @@ class Inventory2 extends PureComponent {
             {@props.items.map(
                 (item) => <Display item=item />
             )}
+            <doric.iconButton action primary
+                style=itemAddStyle icon="ion-plus" />
         </div>
     }
 }

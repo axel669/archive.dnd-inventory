@@ -12,16 +12,17 @@ let batched = (target, name, desc) => {
     return desc
 }
 
-let testItems = [
-    {name: "Herbs", count: 5, weight: 0.25}
-    {name: "Sword", count: 2, weight: 2}
-    {name: "Backpack", count: 1, weight: null, items: [
-        {name: "Candle", count: 3, weight: 0.5}
-        {name: "Bag of Holding", weight: 5, items: [
-            {name: "Kobold Skull", count: 2, weight: 0}
-        ]}
-    ]}
-]
+// let testItems = [
+//     {name: "Herbs", count: 5, weight: 0.25}
+//     {name: "Sword", count: 2, weight: 2}
+//     {name: "Backpack", count: 1, weight: null, items: [
+//         {name: "Candle", count: 3, weight: 0.5}
+//         {name: "Bag of Holding", weight: 5, items: [
+//             {name: "Kobold Skull", count: 2, weight: 0}
+//         ]}
+//     ]}
+// ]
+let testItem = []
 let items = (state = testItems, action) => switch action.type {
     case "items.add" {
         break update(
@@ -29,8 +30,16 @@ let items = (state = testItems, action) => switch action.type {
             {$push: {
                 guid: Date.now()
                 count: 0
-                action.item
+                action.item,
+                guid: Date.now()
             }}
+        )
+    }
+    case "item.udpate" {
+        let index = state.findIndex((item) => item.guid == action.guid)
+        break udpate(
+            state,
+            {"${index}.${action.prop}$set": action.value}
         )
     }
     default {
