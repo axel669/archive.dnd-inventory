@@ -12,17 +12,38 @@ let batched = (target, name, desc) => {
     return desc
 }
 
-// let testItems = [
-//     {name: "Herbs", count: 5, weight: 0.25}
-//     {name: "Sword", count: 2, weight: 2}
-//     {name: "Backpack", count: 1, weight: null, items: [
-//         {name: "Candle", count: 3, weight: 0.5}
-//         {name: "Bag of Holding", weight: 5, items: [
-//             {name: "Kobold Skull", count: 2, weight: 0}
-//         ]}
-//     ]}
-// ]
-let testItems = []
+let b = Date.now()
+let testItems = [
+    {name: "Herbs", count: 5, weight: 0.25, guid: b + 1}
+    {name: "Sword", count: 2, weight: 2, guid: b + 2}
+    {name: "Backpack", count: 1, weight: null, guid: b + 3, items: [
+        {name: "Candle", count: 3, weight: 0.5, guid: b + 4}
+        {name: "Bag of Holding", weight: 5, guid: b + 5, items: [
+            {name: "Kobold Skull", count: 2, weight: 0, guid: b + 6}
+        ]}
+    ]}
+]
+let itemSource2 = {
+    source: {
+        [b + 1]: {name: "Herbs", count: 5, weight: 0.25}
+        [b + 2]: {name: "Sword", count: 2, weight: 2}
+        [b + 3]: {name: "Backpack", count: 1, weight: null, limit: null}
+        [b + 4]: {name: "Candle", count: 3, weight: 0.5}
+        [b + 5]: {name: "Bag of Holding", weight: 5, limit: 500}
+        [b + 6]: {name: "Kobold Skull", count: 2, weight: 0}
+    }
+    structure: [
+        b + 1
+        b + 2
+        [b + 3, [
+            b + 4
+            [b + 5, [
+                b + 6
+            ]]
+        ]]
+    ]
+}
+// let testItems = []
 let items = (state = testItems, action) => switch action.type {
     case "items.add" {
         break update(

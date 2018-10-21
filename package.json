@@ -10,7 +10,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@axel669/teascript": "^0.4.3",
+    "@axel669/teascript": "^0.6.4",
     "@axel669/teascript-loader": "^0.2.0",
     "@babel/cli": "^7.0.0-beta.52",
     "@babel/core": "^7.0.0-beta.52",

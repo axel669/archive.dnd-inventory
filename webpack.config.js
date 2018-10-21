@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
     entry: './src/main.tea',
     // entry: './src/main.js',
@@ -10,6 +12,13 @@ module.exports = {
     mode: 'development',
     node: {
         global: false
+    },
+    resolve: {
+        alias: {
+            "@store": path.resolve(__dirname, "src", "store"),
+            "@screen": path.resolve(__dirname, "src", "screen"),
+            "@core": path.resolve(__dirname, "src")
+        }
     },
     module: {
         rules: [

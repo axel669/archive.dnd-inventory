@@ -2,10 +2,10 @@ import React, {Component, PureComponent} from "react"
 import doric from "doric-components"
 import bind from "autobind-decorator"
 
-import ItemList from "./ItemList.tea"
+import ItemList from "@screen/ItemList.tea"
 
-import yggdrasil from "../yggdrasil.tea"
-import sheet from "../style.tea"
+import yggdrasil from "@core/yggdrasil.tea"
+import sheet from "@core/style.tea"
 
 sheet.addStyles({
     "table": {
@@ -221,20 +221,23 @@ sheet.addStyles({
 class Item extends PureComponent {
     render() => {
         let item = @props.item
+        // let
+
         return <Card>
             <Card.title main=item.name />
 
             <Card.content>
+                <div>{item.guid}</div>
                 <item-grid>
                     <div>Count</div>
                     <div>{item.count}</div>
-                    <doric.button text="+1" flush />
-                    <doric.button text="-1" flush />
+                    <doric.button text="+1" flush flat primary />
+                    <doric.button text="-1" flush flat danger />
 
                     <div>Weight</div>
                     <div>{item.count * item.weight}</div>
-                    <doric.button text="+X" flush />
-                    <doric.iconButton icon="ion-trash-b" flush />
+                    <doric.button text="+X" flush flat primary />
+                    <doric.iconButton icon="ion-trash-b" flush flat danger />
                 </item-grid>
             </Card.content>
         </Card>
@@ -246,6 +249,7 @@ class Container extends PureComponent {
         return <Card container>
             <Card.title main=container.name />
             <Card.content>
+                <div>{container.guid}</div>
                 <Expandable title="Items">
                     {container.items.map(
                         (item) => <Display item=item />
@@ -255,7 +259,7 @@ class Container extends PureComponent {
         </Card>
     }
 }
-class Display extends Component {
+class Display extends PureComponent {
     render() => {
         let item = @props.item
         let Display = (item.items == undefined) ? Item : Container
@@ -264,7 +268,7 @@ class Display extends Component {
 }
 
 let itemAddStyle = {
-    position: "absolute"
+    position: "fixed"
     bottom: 0
     right: 0
     top: "auto"
