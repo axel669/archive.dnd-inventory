@@ -1,17 +1,19 @@
-import store from "./store/store.tea"
-import actions from "./store/actions.tea"
+import store from "@store/store.tea"
+import actions from "@store/actions.tea"
 
-import Inventory from "./screen/Inventory.tea"
+// import Inventory from "./screen/Inventory.tea"
 
 export default {
     store
     items: {
         add(item) => actions.batch.dispatch(
             actions.items.add(item)
-            actions.screen.change(Inventory)
+            actions.screen.change(null)
         )
     }
     screen: {
         change(screen) => actions.screen.change.dispatch(screen)
     }
+    "inventory.update.count": (path, value) =>
+        actions.inventory.update.count.dispatch(path, value)
 }

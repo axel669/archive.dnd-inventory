@@ -3,70 +3,50 @@ import {createStore, combineReducers} from "redux"
 import update from "immutable-update-values"
 import {batchReducer} from "redux-batching"
 
-import Inventory from "../screen/Inventory.tea"
+// import Inventory from "@screen/Inventory.tea"
 
-import itemSource from "../items.js"
+import itemSource from "@core/items.js"
+import inventory from "@store/inventory.tea"
 
 let batched = (target, name, desc) => {
     desc.value = batchReducer(desc.value)
     return desc
 }
 
-let b = Date.now()
-let testItems = [
-    {name: "Herbs", count: 5, weight: 0.25, guid: b + 1}
-    {name: "Sword", count: 2, weight: 2, guid: b + 2}
-    {name: "Backpack", count: 1, weight: null, guid: b + 3, items: [
-        {name: "Candle", count: 3, weight: 0.5, guid: b + 4}
-        {name: "Bag of Holding", weight: 5, guid: b + 5, items: [
-            {name: "Kobold Skull", count: 2, weight: 0, guid: b + 6}
-        ]}
-    ]}
-]
-let itemSource2 = {
-    source: {
-        [b + 1]: {name: "Herbs", count: 5, weight: 0.25}
-        [b + 2]: {name: "Sword", count: 2, weight: 2}
-        [b + 3]: {name: "Backpack", count: 1, weight: null, limit: null}
-        [b + 4]: {name: "Candle", count: 3, weight: 0.5}
-        [b + 5]: {name: "Bag of Holding", weight: 5, limit: 500}
-        [b + 6]: {name: "Kobold Skull", count: 2, weight: 0}
-    }
-    structure: [
-        b + 1
-        b + 2
-        [b + 3, [
-            b + 4
-            [b + 5, [
-                b + 6
-            ]]
-        ]]
-    ]
-}
-// let testItems = []
-let items = (state = testItems, action) => switch action.type {
-    case "items.add" {
-        break update(
-            state,
-            {$push: {
-                guid: Date.now()
-                count: 0
-                action.item,
-                guid: Date.now()
-            }}
-        )
-    }
-    case "item.udpate" {
-        let index = state.findIndex((item) => item.guid == action.guid)
-        break udpate(
-            state,
-            {"${index}.${action.prop}$set": action.value}
-        )
-    }
-    default {
-        break state
-    }
-}
+// let testItems = [
+//     {name: "Herbs", count: 5, weight: 0.25, guid: b + 1}
+//     {name: "Sword", count: 2, weight: 2, guid: b + 2}
+//     {name: "Backpack", count: 1, weight: null, guid: b + 3, items: [
+//         {name: "Candle", count: 3, weight: 0.5, guid: b + 4}
+//         {name: "Bag of Holding", weight: 5, guid: b + 5, items: [
+//             {name: "Kobold Skull", count: 2, weight: 0, guid: b + 6}
+//         ]}
+//     ]}
+// ]
+// // let testItems = []
+// let items = (state = testItems, action) => switch action.type {
+//     case "items.add" {
+//         break update(
+//             state,
+//             {$push: {
+//                 guid: Date.now()
+//                 count: 0
+//                 action.item,
+//                 guid: Date.now()
+//             }}
+//         )
+//     }
+//     case "item.udpate" {
+//         let index = state.findIndex((item) => item.guid == action.guid)
+//         break udpate(
+//             state,
+//             {"${index}.${action.prop}$set": action.value}
+//         )
+//     }
+//     default {
+//         break state
+//     }
+// }
 
 let itemList = (state = null, action) => state ?? itemSource
 
@@ -80,7 +60,8 @@ let screen = (state = Inventory, action) =>
 
 export default createStore(
     combineReducers({
-        @batched items
+        // @batched items
+        @batched inventory
         @batched itemList
         @batched screen
     })

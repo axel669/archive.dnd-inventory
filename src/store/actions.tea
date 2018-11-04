@@ -1,7 +1,7 @@
 import update from "immutable-update-values"
 import {gen} from "redux-batching"
 
-import store from "./store.tea"
+import store from "@store/store.tea"
 
 let {batch, action} = gen(store)
 
@@ -16,6 +16,7 @@ let pass = (...names) =>
 
 let actions = Object.entries({
     "items.add": pass("item")
+    "inventory.update.count": pass("path", "value")
     "screen.change": pass("screen")
 }).reduce(
     (mod, [key, value]) => {

@@ -51,5 +51,8 @@
     "webpack": "^4.15.1",
     "webpack-cli": "^3.0.8"
   },
-  "dependencies": {}
+  "dependencies": {
+    "autodll-webpack-plugin": "^0.4.2",
+    "loader-utils": "^1.1.0"
+  }
 }

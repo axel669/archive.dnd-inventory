@@ -1,0 +1,44 @@
+import React from "react"
+
+import sheet from "@core/style.tea"
+
+sheet.addStyles({
+    "item-card": {
+        display: "block"
+        margin: 4
+        backgroundColor: "white"
+        boxShadow: "2px 2px 2px rgba(0, 0, 0, 0.25)"
+        border: "1px solid lightgray"
+        position: "relative"
+    }
+    "item-card[container]": {
+        border: "1px solid black"
+    }
+    "item-card-title": {
+        margin: "2px 2px 4px 2px"
+        display: "block"
+        fontSize: 18
+        fontWeight: "bold"
+    }
+    "item-card-content": {
+        display: "block"
+        margin: 8
+    }
+    "item-expandable": {
+        display: "block"
+        backgroundColor: "white"
+        borderRadius: 3
+        paddingBottom: 4
+    }
+})
+
+let Card = ({children, ...props}) =>
+    <item-card {...props}>
+        {children}
+    </item-card>
+Card.title = (props) =>
+    <item-card-title>{props.main}</item-card-title>
+Card.content = ({children}) =>
+    <item-card-content>{children}</item-card-content>
+
+export default Card

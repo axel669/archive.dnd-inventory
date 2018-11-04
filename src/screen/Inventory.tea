@@ -7,175 +7,7 @@ import ItemList from "@screen/ItemList.tea"
 import yggdrasil from "@core/yggdrasil.tea"
 import sheet from "@core/style.tea"
 
-sheet.addStyles({
-    "table": {
-        tableLayout: "fixed"
-        width: "100%"
-    }
-    "tbody": {
-        height: 200
-        "overflow-y": "scroll"
-    }
-    "td": {
-        border: "1px solid black"
-        width: "100%"
-    }
-    ".test th": {
-        height: 0
-        border: "0px solid transparent"
-    }
-})
-
-class Spreadsheet extends PureComponent {
-    @bind
-    defaultRow() =>
-        <tr>
-            {@props.headers.map(
-                (header) => {
-                    let display = switch {
-                        case header.display != undefined {
-                            break header.display
-                        }
-                        case header.accessor != undefined {
-                            break (item) => item[header.accessor]
-                        }
-                        default {
-                            break (item) => item[header]
-                        }
-                    }
-
-                    return <td>{display(item)}</td>
-                }
-            )}
-        </tr>
-    render() => {
-        let row = @props.row ?? @defaultRow
-        return (
-            <table>
-                <thead>
-                    <tr>
-                        {@props.headers.map(
-                            (header, i) =>
-                                <th key={i} style={header.style}>
-                                    {header.title ?? header}
-                                </th>
-                        )}
-                    </tr>
-                </thead>
-                <tbody>
-                    {@props.data.map(row)}
-                </tbody>
-            </table>
-        )
-    }
-}
-
-class Inventory extends PureComponent {
-    static propList = ["items"]
-
-    addItem() =>
-        yggdrasil.screen.change(ItemList)
-
-    render() => {
-        let headers = [
-            {
-                title: ""
-                display({item}) => item.name
-                style: {
-                    width: "60%"
-                }
-            }
-            {
-                title: ""
-                display({count}) => count
-            }
-            {
-                title: ""
-                display({item}) => item.price
-            }
-            {
-                title: ""
-                display(item) =>
-                    <doric.iconButton block flush
-                        icon="ion-edit"
-                        onTap={() => console.log(item)} />
-            }
-        ]
-        return <div>
-            <doric.button.pure block text="Add" onTap=@addItem />
-            {false && <Spreadsheet data=@props.items headers=headers />}
-            <div className="test">
-            <doric.grid>
-                {@props.items.map(
-                    ({item, guid, count}) =>
-                        <div key=guid>
-                            <doric.grid.col size=12>
-                                {item.name}
-                            </doric.grid.col>
-                            <doric.grid.col size=2>
-                                {count}
-                            </doric.grid.col>
-                            <doric.grid.col size=8>&nbsp;</doric.grid.col>
-                            <doric.grid.col size=2>
-                                <doric.iconButton block flush icon="ion-trash" />
-                            </doric.grid.col>
-                        </div>
-                )}
-            </doric.grid>
-            </div>
-        </div>
-    }
-}
-
-sheet.addStyles({
-    "item-card": {
-        display: "block"
-        margin: 4
-        // padding: 8
-        backgroundColor: "white"
-        boxShadow: "2px 2px 2px rgba(0, 0, 0, 0.25)"
-        border: "1px solid lightgray"
-        position: "relative"
-    }
-    "item-card[container]": {
-        // backgroundColor: "#75cece"
-        border: "1px solid black"
-    }
-    // "item-card[container] *": {
-    //     zIndex: 1
-    // }
-    // "item-card[container]::before": {
-    //     position: "absolute"
-    //     content: "\"\""
-    //     top: 0
-    //     left: 0
-    //     width: "100%"
-    //     height: "100%"
-    //     backgroundColor: "rgba(0, 255, 255, 0.1)"
-    //     zIndex: 0
-    // }
-    "item-card-title": {
-        margin: "2px 2px 4px 2px"
-        display: "block"
-        fontSize: 18
-        fontWeight: "bold"
-    }
-    "item-card-content": {
-        display: "block"
-        margin: 8
-    }
-    "item-expandable": {
-        display: "block"
-        backgroundColor: "white"
-        borderRadius: 3
-        paddingBottom: 4
-    }
-})
-let Card = ({children, ...props}) => <item-card {...props}>
-    {children}
-</item-card>
-Card.title = (props) => <item-card-title>{props.main}</item-card-title>
-Card.content = ({children}) => <item-card-content>{children}</item-card-content>
+import Card from "@component/Card.tea"
 
 class Expandable extends PureComponent {
     constructor(props) => {
@@ -205,10 +37,6 @@ class Expandable extends PureComponent {
 sheet.addStyles({
     "item-grid": {
         display: "grid"
-        // gridTemplateAreas: "
-        //     \"d a a b\"
-        //     \"d c c b\"
-        //     ;"
         gridTemplateColumns: "auto auto auto auto"
         gridAutoRows: 30
     }
@@ -220,7 +48,8 @@ sheet.addStyles({
 })
 class Item extends PureComponent {
     render() => {
-        let item = @props.item
+        let {item, path} = @props
+        let addOne = () => yggdrasil."inventory.update.count"(path, 1)
         // let
 
         return <Card>
@@ -231,7 +60,7 @@ class Item extends PureComponent {
                 <item-grid>
                     <div>Count</div>
                     <div>{item.count}</div>
-                    <doric.button text="+1" flush flat primary />
+                    <doric.button text="+1" flush flat primary onTap=addOne />
                     <doric.button text="-1" flush flat danger />
 
                     <div>Weight</div>
@@ -245,25 +74,35 @@ class Item extends PureComponent {
 }
 class Container extends PureComponent {
     render() => {
-        let container = @props.item
+        // let container = @props.item
+        let {item, items, source, path} = @props
         return <Card container>
-            <Card.title main=container.name />
+            <Card.title main=item.name />
             <Card.content>
-                <div>{container.guid}</div>
+                <div>{item.guid}</div>
                 <Expandable title="Items">
-                    {container.items.map(
-                        (item) => <Display item=item />
+                    {items.map(
+                        (info, index) =>
+                            <Display {...{info, source}}
+                                path="${path}.${index}" />
                     )}
                 </Expandable>
             </Card.content>
         </Card>
     }
 }
-class Display extends PureComponent {
+class Display extends Component {
     render() => {
-        let item = @props.item
-        let Display = (item.items == undefined) ? Item : Container
-        return <Display item=item />
+        let {info, source, path} = @props
+        let item = source[info[0]]
+        if Array.isArray(info[1]) == false {
+            return <Item path=path item={...item, count: info[1]} />
+        }
+        else {
+            return <Container {...{item, source, path}} items=info[1] />
+        }
+        // let Display = (item.items == undefined) ? Item : Container
+        // return <Display item=item />
     }
 }
 
@@ -277,14 +116,14 @@ let itemAddStyle = {
     height: 40
 }
 class Inventory2 extends PureComponent {
-    static propList = ["items"]
+    static propList = ["inventory"]
 
     render() => {
+        let {structure, source} = @props.inventory
         return <doric.appContainer title="Inventory">
             <div style={height: 0.1} />
-            {/* <pre style={margin: 0}>{JSON.stringify(@props, null, "  ")}</pre> */}
-            {@props.items.map(
-                (item) => <Display item=item />
+            {structure.map(
+                (info, index) => <Display info=info source=source path=index />
             )}
             <doric.iconButton action primary
                 style=itemAddStyle icon="ion-plus" />

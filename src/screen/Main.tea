@@ -3,7 +3,9 @@ import doric from "doric-components"
 
 // import ItemList from "./ItemList.coffee"
 
-import yggdrasil from "../yggdrasil.tea"
+import Inventory from "@screen/Inventory.tea"
+
+import yggdrasil from "@core/yggdrasil.tea"
 
 let connect = (store) =>
     (Parent) => class extends Component {
@@ -24,7 +26,7 @@ let connect = (store) =>
 // @doric.dialogify
 class Main extends PureComponent {
     render() => {
-        let Screen = this.props.screen
+        let {Screen = Inventory} = this.props.screen
         let props = Screen.propList.reduce(
             (p, name) => {[name]: @props[name]}
             {}
