@@ -3,7 +3,7 @@ import {createStore, combineReducers} from "redux"
 import update from "immutable-update-values"
 import {batchReducer} from "redux-batching"
 
-// import Inventory from "@screen/Inventory.tea"
+import Inventory from "@screen/Inventory.tea"
 
 import itemSource from "@core/items.js"
 import inventory from "@store/inventory.tea"
@@ -12,6 +12,8 @@ let batched = (target, name, desc) => {
     desc.value = batchReducer(desc.value)
     return desc
 }
+
+console.log(inventory, Inventory)
 
 // let testItems = [
 //     {name: "Herbs", count: 5, weight: 0.25, guid: b + 1}

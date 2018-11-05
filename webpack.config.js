@@ -1,5 +1,4 @@
 const path = require("path");
-const AutoDllPlugin = require('autodll-webpack-plugin');
 
 module.exports = {
     entry: './src/main.tea',
@@ -25,16 +24,10 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                loader: "babel-loader"
-            },
-            {
                 test: /\.tea$/,
                 // test: /\.js$/,
                 exclude: /node_modules/,
-                // exclude: ["node_modules", "redux.js", "index.js"],
-                include: path.resolve(__dirname, "src"),
+                // include: path.resolve(__dirname, "src"),
                 loader: 'babel-loader!@axel669/teascript-loader'
                 // loader: 'babel-loader'
             }
@@ -70,18 +63,5 @@ module.exports = {
             //     // loader: 'babel-loader!coffee-loader'
             // }
         ]
-    },
-    plugins: [
-        new AutoDllPlugin({
-            filename: "dll.js",
-            entry: {
-                vendor: [
-                    "react",
-                    "react-dom",
-                    "redux",
-                    "doric-components"
-                ]
-            }
-        })
-    ]
+    }
 };
