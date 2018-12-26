@@ -1,58 +1,31 @@
 {
-  "name": "",
-  "version": "1.0.0",
+  "name": "dnd-inventory",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack",
-    "server": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axel669/dnd-inventory.git"
+  },
+  "author": "Axel",
   "license": "MIT",
-  "devDependencies": {
-    "@axel669/teascript": "^0.6.5",
-    "@axel669/teascript-loader": "^0.2.0",
-    "@babel/cli": "^7.0.0-beta.52",
-    "@babel/core": "^7.0.0-beta.52",
-    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-decorators": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-do-expressions": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-export-default-from": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-export-namespace-from": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-function-bind": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-function-sent": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-json-strings": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-logical-assignment-operators": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-numeric-separator": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-optional-chaining": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-pipeline-operator": "^7.0.0-beta.56",
-    "@babel/plugin-proposal-throw-expressions": "^7.0.0-beta.56",
-    "@babel/plugin-syntax-dynamic-import": "^7.0.0-beta.56",
-    "@babel/plugin-syntax-import-meta": "^7.0.0-beta.56",
-    "@babel/plugin-transform-classes": "^7.0.0",
-    "@babel/polyfill": "^7.0.0-beta.52",
-    "@babel/preset-env": "^7.0.0",
-    "@babel/preset-flow": "^7.0.0-beta.56",
-    "@babel/preset-react": "^7.0.0-beta.56",
-    "autobind-decorator": "^2.1.0",
-    "babel-loader": "^8.0.0-beta.4",
-    "coffee-loader": "^0.9.0",
-    "coffeescript": "^2.3.1",
-    "doric-components": "^0.4.7",
-    "immutable-update-values": "^0.1.2",
-    "json-loader": "^0.5.7",
-    "node-static": "^0.7.10",
-    "react": "^16.4.1",
-    "react-dom": "^16.4.1",
-    "redux": "^4.0.0",
-    "redux-batching": "^0.1.0",
-    "ssjs": "^0.2.0",
-    "webpack": "^4.15.1",
-    "webpack-cli": "^3.0.8"
+  "bugs": {
+    "url": "https://github.com/axel669/dnd-inventory/issues"
   },
-  "dependencies": {
-    "autodll-webpack-plugin": "^0.4.2",
-    "loader-utils": "^1.1.0"
+  "homepage": "https://github.com/axel669/dnd-inventory#readme",
+  "devDependencies": {
+    "@axel669/immutable-update": "^0.1.0",
+    "@axel669/norn": "^0.2.1",
+    "@axel669/teascript": "^0.11.0",
+    "react": "^16.7.0",
+    "react-dom": "^16.7.0",
+    "rollup": "^0.68.2",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-replace": "^2.1.0"
   }
 }

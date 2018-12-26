@@ -1,0 +1,18 @@
+import norn from "./norn.js"
+// import norn from "@axel669/norn"
+import update from "@axel669/immutable-update"
+
+let {actions, ...store} = norn({
+    requests: {
+        initial() => {}
+        "$new"(requests) => update(
+            requests
+            {["${Date.now()}.$set"]: {}}
+        )
+    }
+})
+
+export {
+    actions,
+    store
+}

@@ -1,15 +1,29 @@
-import React, {Component, PureComponent} from "react"
-import doric from "doric-components"
-import autobind from "autobind-decorator"
+import React, {Component} from "react"
+import ReactDOM from "react-dom"
 
-// import sheet from "./style.coffee"
-import sheet from "@core/style.tea"
+import {store, actions} from "./state.tea"
 
-// import Main from "./screen/Main.coffee"
-import Main from "@screen/Main.tea"
+class Main extends Component {
+    constructor(props) => {
+        super(props)
 
-sheet.attach()
-doric.init(
+        @state = store.state
+        store.subscribe(
+            (newState) => @setState(newState)
+        )
+    }
+
+    render() => {
+        return <div>
+            test?
+            <pre>{JSON.stringify(@state, null, "  ")}</pre>
+        </div>
+    }
+}
+
+window.appActions = actions
+
+ReactDOM.render(
     <Main />
     document.querySelector("app-root")
 )

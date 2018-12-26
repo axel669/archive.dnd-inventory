@@ -4,8 +4,8 @@ providers: [
     config:
       commands: [
         {
-          project: "C:\\Users\\cmorgan\\Documents\\programming\\js\\portal-demo"
-          source: "C:\\Users\\cmorgan\\Documents\\programming\\js\\portal-demo\\.build-tools.cson"
+          project: "C:\\Users\\cmorgan\\Documents\\git\\dnd-inventory"
+          source: "C:\\Users\\cmorgan\\Documents\\git\\dnd-inventory\\.build-tools.cson"
           name: "Build"
           command: "npm run build"
           wd: "."
@@ -24,7 +24,7 @@ providers: [
             console:
               close_success: true
               queue_in_buffer: true
-              colors: false
+              colors: true
               stdin: false
           version: 2
         }
