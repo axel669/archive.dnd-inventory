@@ -1,27 +1,66 @@
-import React, {Component} from "react"
-import ReactDOM from "react-dom"
 
-import {store, actions} from "./state.tea"
+// import React, {Component, PureComponent} from "react"
+// import ReactDOM from "react-dom"
+
+import norn from "@axel669/norn/es6/norn.js"
+
+import {state, actions} from "./state.tea"
+
+let {Component, PureComponent} = React
+
+let Router = (routes) =>
+    (Display) => class extends Component {
+        render() => {null}
+    }
 
 class Main extends Component {
     constructor(props) => {
         super(props)
 
-        @state = store.state
-        store.subscribe(
+        @state = state.current
+        state.subscribe(
             (newState) => @setState(newState)
         )
+    }
+
+    addChar() => {
+        let name = prompt("")
+        if name == null || name.trim() == "" {
+            return
+        }
+
+        actions."chars.$add"(name)
     }
 
     render() => {
         return <div>
             test?
             <pre>{JSON.stringify(@state, null, "  ")}</pre>
+            <CharList chars=@state.chars />
+            <button onClick=@addChar>Add Char</button>
         </div>
     }
 }
 
 window.appActions = actions
+
+class CharList extends PureComponent {
+    render() => {
+        return <div>
+            {@props.chars.map(
+                (ch) => <button>{ch.name} ({ch.id})</button>
+            )}
+        </div>
+    }
+}
+
+let screens = [CharList].reduce(
+    (screens, screen) => {
+        ...screens
+        [screen.name]: screen
+    }
+    {}
+)
 
 ReactDOM.render(
     <Main />

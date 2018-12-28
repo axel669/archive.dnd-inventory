@@ -19,7 +19,7 @@
   "homepage": "https://github.com/axel669/dnd-inventory#readme",
   "devDependencies": {
     "@axel669/immutable-update": "^0.1.0",
-    "@axel669/norn": "^0.2.1",
+    "@axel669/norn": "^0.3.1",
     "@axel669/teascript": "^0.11.0",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",

@@ -1,18 +1,124 @@
-import norn from "./norn.js"
-// import norn from "@axel669/norn"
+import norn from "@axel669/norn/es6/norn.js"
 import update from "@axel669/immutable-update"
 
-let {actions, ...store} = norn({
-    requests: {
-        initial() => {}
-        "$new"(requests) => update(
-            requests
-            {["${Date.now()}.$set"]: {}}
+construct MapList {
+    new(list = [], items = {}) => {
+        [#list, #items] = [list, items]
+    }
+
+    add(item) => {
+        let id = "${Date.now()}.${Math.random()}"
+        return MapList(
+            [...#list, id]
+            {...#items, [id]: item}
         )
     }
-})
+    updateItem(id, newItem) => MapList(
+        #list
+        {...#items, [id]: newItem}
+    )
+
+    item(id) => #items[id]
+    index(index) => #items[#list[index]]
+
+    get list() => #list.map(
+        (id) => {
+            id
+            info: #items[id]
+        }
+    )
+}
+
+// let translations = {
+//     "en-US": {
+//         name: "English"
+//     }
+// }
+//
+// let language = {
+//     initial() => {
+//         locale: "en-us"
+//         translations: translations."en-US"
+//     }
+//     $change(current, {locale}) => {
+//         if translations[locale] == void {
+//             throw Error*("Language not found")
+//         }
+//         return {
+//             locale
+//             translations: translations[locale]
+//         }
+//     }
+// }
+// let languagePreProcessors = {
+//     "language.$change"(locale) => {locale}
+// }
+//
+// window.wof = norn(
+//     {
+//         language
+//     }
+//     {
+//         ...languagePreProcessors
+//     }
+// )
+// wof.subscribe(
+//     (newState) => console.log(newState)
+// )
+
+window.wat = norn(
+    {
+        chars: {
+            initial() => []
+            $add(chars, {type, ...ch}) => [...chars, ch]
+        }
+        bags: {
+            initial() => {}
+            "chars.$add"(bags, {id}) => {
+                ...bags
+                [id]: MapList()
+            }
+            $add(bags, {id, item}) => {
+                ...bags
+                [id]: bags[id].add(item)
+            }
+            $update(bags, {id, item}) => {
+                ...bags
+                [id]: bags[id].updateItem(item.id, item.info)
+            }
+        }
+        screen: {
+            initial() => "/chars"
+        }
+    }
+    {
+        "chars.$add"(name) => {name, id: Date.now()}
+        "bags.$add"(id, item) => {id, item}
+        "bags.$update"(id, item) => {id, item}
+    }
+)
+// wat.subscribe(
+//     (newState) => console.log(newState)
+// )
+
+let {actions, ...state} = wat
 
 export {
     actions,
-    store
+    state
 }
+
+// let {actions, ...store} = norn({
+//     requests: {
+//         initial() => {}
+//         "$new"(requests) => update(
+//             requests
+//             {["${Date.now()}.$set"]: {}}
+//         )
+//     }
+// })
+//
+// export {
+//     actions,
+//     store
+// }

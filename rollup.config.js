@@ -14,7 +14,7 @@ export default {
     ],
     plugins: [
         tea({
-            include: "src/**.tea"
+            include: "**.tea"
         }),
         resolve({
             browser: true
@@ -24,7 +24,12 @@ export default {
                 "node_modules/**"
             ],
             namedExports: {
-                "node_modules/react/index.js": ["Children", "Component", "createElement"],
+                "node_modules/react/index.js": [
+                    "Children",
+                    "Component",
+                    "createElement",
+                    "PureComponent"
+                ],
                 "node_modules/react-dom/index.js": ["render"]
             }
         }),
