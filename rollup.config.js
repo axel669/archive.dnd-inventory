@@ -3,16 +3,37 @@ import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import replace from "rollup-plugin-replace";
 
+const alias = (aliasOptions) => {
+    const regex = new RegExp(`^(${Object.keys(aliasOptions).join("|")})`);
+
+    return {
+        resolveId(importee) {
+            const matched = importee.replace(
+                regex,
+                (s, name) => aliasOptions[name]
+            );
+
+            if (matched !== importee) {
+                return require.resolve(matched);
+            }
+
+            return null;
+        }
+    }
+};
+
 export default {
-    input: "src/main.tea",
+    input: "./src/main.tea",
     output: [
         {
             file: "app/app.js",
-            format: "iife",
-            // name: "Wat"
+            format: "iife"
         }
     ],
     plugins: [
+        alias({
+            "@state": "./src/state.tea"
+        }),
         tea({
             include: "**.tea"
         }),

@@ -4,11 +4,11 @@
 
 import norn from "@axel669/norn/es6/norn.js"
 
-import {state, actions} from "./state.tea"
+import {state, actions} from "@state"
 
 let {Component, PureComponent} = React
 
-let createMatcher = (route) => {
+let createMatcher = (route, exact) => {
     let names = []
     let regexParts = route
         .replace(/^\//, "")
@@ -22,12 +22,12 @@ let createMatcher = (route) => {
             if check.startsWith("*") == true {
                 let name = check[1...]
                 names.push(name)
-                return "(.+)"
+                return "(.*)"
             }
             return check
         })
-    let regex = RegExp("/?${regexParts.join("/")}/?$")
-    // console.log(regex, names)
+    let endMatch = (exact == true) ? "$" : ""
+    let regex = RegExp("^/?${regexParts.join("/")}/?${endMatch}")
     return (route) => {
         let match = route.match(regex)
 
@@ -50,15 +50,15 @@ construct Router {
         #routeListener = routeListener
     }
 
-    connect(route) => {
-        let matcher = createMatcher(route)
+    connect(route, exactMatch = false) => {
+        let matcher = createMatcher(route, exactMatch)
         return (Component) => class extends React.Component {
             static displayName = "Router[${Component.displayName ?? Component.name}]"
 
             constructor(props) => {
                 super(props)
 
-                @state = #store.state
+                @state = #routeListener.state
             }
 
             componentDidMount() => {
@@ -80,15 +80,13 @@ construct Router {
     }
 }
 
-construct Dispatcher {
+construct Publisher {
     new() => {
         #listeners = Map*()
     }
 
-    dispatch(message) => {
-        // console.log(#listeners.values())
+    publish(message) => {
         for handler in #listeners.values() {
-            // console.log(message, handler)
             handler(message)
         }
     }
@@ -102,7 +100,7 @@ construct Dispatcher {
 
 construct HashListener {
     new() => {
-        #dispatcher = Dispatcher()
+        #publisher = Publisher()
 
         #currentHash = @hash
         #interval = setInterval(
@@ -110,11 +108,10 @@ construct HashListener {
                 let hash = @hash
 
                 if hash != #currentHash {
-                    let [oldHash, newHash] = [#currentHash, hash]
                     #currentHash = hash
-                    @dispatch({
-                        oldHash
-                        newHash
+                    @publish({
+                        path: hash
+                        parts: hash.split("/")
                     })
                 }
             }
@@ -124,14 +121,17 @@ construct HashListener {
 
     get hash() => location.hash.toString().replace(/^#/, "")
 
-    get subscribe() => #dispatcher.subscribe
-    get dispatch() => #dispatcher.dispatch
+    get state() => {
+        path: @hash
+        parts: @hash.split("/")
+    }
+
+    get subscribe() => #publisher.subscribe
+    get publish() => #publisher.publish
 }
 
-window.hashy = HashListener()
-// let MainRouter = Router()
+let MainRouter = Router(HashListener())
 
-// @MainRouter.connect("/*path")
 class Main extends Component {
     constructor(props) => {
         super(props)
@@ -142,6 +142,18 @@ class Main extends Component {
         )
     }
 
+    render() => {
+        return <div>
+            <CharList chars=@state.chars />
+            <BagDisplay bags={@state.bags} />
+        </div>
+    }
+}
+
+window.appActions = actions
+
+@MainRouter.connect("/", true)
+class CharList extends PureComponent {
     addChar() => {
         let name = prompt("")
         if name == null || name.trim() == "" {
@@ -153,24 +165,21 @@ class Main extends Component {
 
     render() => {
         return <div>
-            test?
-            <pre>{JSON.stringify(@state, null, "  ")}</pre>
-            <pre>{JSON.stringify(@props, null, "  ")}</pre>
-            <CharList chars=@state.chars />
+            <button onClick=@addChar>Add Char</button>
+            {@props.chars.map(
+                (ch) => <div>
+                    <a href="#/${ch.id}">{ch.name}</a>
+                </div>
+            )}
         </div>
     }
 }
 
-window.appActions = actions
-
-// @MainRouter.connect("/chars/:id")
-class CharList extends PureComponent {
+@MainRouter.connect("/:bagID")
+class BagDisplay extends PureComponent {
     render() => {
         return <div>
-            {@props.chars.map(
-                (ch) => <button>{ch.name} ({ch.id})</button>
-            )}
-            <button onClick=@addChar>Add Char</button>
+            Items?!
         </div>
     }
 }

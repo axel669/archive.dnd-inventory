@@ -189,9 +189,6 @@
                     ...bags,
                     [id]: bags[id].updateItem(item.id, item.info)
                 })
-            },
-            screen: {
-                initial: () => "/chars"
             }
         },
         {
@@ -211,12 +208,98 @@
     );
     const { actions: actions$1, ...state } = wat;
 
+    console.log(state, actions$1);
     const { Component, PureComponent } = React;
-    const Dispatcher = (() => {
+    const createMatcher = (route, exact) => {
+        const names = [];
+        const regexParts = route
+            .replace(/^\//, ``)
+            .split("/")
+            .map((check) => {
+                if (check.startsWith(":") === true) {
+                    const name = check.slice(1, undefined);
+                    names.push(name);
+                    return "(\\w+)";
+                }
+                if (check.startsWith("*") === true) {
+                    const name = check.slice(1, undefined);
+                    names.push(name);
+                    return "(.*)";
+                }
+                return check;
+            });
+        const endMatch = exact === true ? "$" : ``;
+        const regex = RegExp(`^/?${regexParts.join("/")}/?${endMatch}`);
+        return (route) => {
+            const match = route.match(regex);
+            if (match === null) {
+                return null;
+            }
+            return names.reduce(
+                (params, name, index) => ({
+                    ...params,
+                    [name]: match[index + 1]
+                }),
+                {}
+            );
+        };
+    };
+    const Router = (() => {
+        const construct = function construct(routeListener) {
+            const self = {};
+            Object.defineProperties(this, {});
+            this.connect = (route, exactMatch = false) => {
+                const matcher = createMatcher(route, exactMatch);
+                return (Component) => {
+                    var _class0, nullref0;
+
+                    return (
+                        (_class0 = class extends React.Component {
+                            constructor(props) {
+                                super(props);
+                                this.state = self.routeListener.state;
+                            }
+                            componentDidMount() {
+                                self.unsub = self.routeListener.subscribe(
+                                    (newState) => this.setState(newState)
+                                );
+                            }
+                            componentWillUnmount() {
+                                return self.ubsub();
+                            }
+                            render() {
+                                const params = matcher(this.state.path);
+                                if (params === null) {
+                                    return null;
+                                }
+                                return React.createElement(Component, {
+                                    ...this.props,
+                                    _router: {
+                                        ...this.state,
+                                        params: params
+                                    }
+                                });
+                            }
+                        }),
+                        (_class0.displayName = `Router[${
+                        (nullref0 = Component.displayName) != null
+                            ? nullref0
+                            : Component.name
+                    }]`),
+                        _class0
+                    );
+                };
+            };
+            self.routeListener = routeListener;
+            return this;
+        };
+        return (...args) => construct.apply({}, args);
+    })();
+    const Publisher = (() => {
         const construct = function construct() {
             const self = {};
             Object.defineProperties(this, {});
-            this.dispatch = (message) => {
+            this.publish = (message) => {
                 for (const handler of self.listeners.values()) {
                     handler(message);
                 }
@@ -238,23 +321,28 @@
                 hash: {
                     get: () => location.hash.toString().replace(/^#/, ``)
                 },
-                subscribe: {
-                    get: () => self.dispatcher.subscribe
+                state: {
+                    get: () => ({
+                        path: this.hash,
+                        parts: this.hash.split("/")
+                    })
                 },
-                dispatch: {
-                    get: () => self.dispatcher.dispatch
+                subscribe: {
+                    get: () => self.publisher.subscribe
+                },
+                publish: {
+                    get: () => self.publisher.publish
                 }
             });
-            self.dispatcher = Dispatcher();
+            self.publisher = Publisher();
             self.currentHash = this.hash;
             self.interval = setInterval(() => {
                 const hash = this.hash;
                 if (hash !== self.currentHash) {
-                    const [oldHash, newHash] = [self.currentHash, hash];
                     self.currentHash = hash;
-                    this.dispatch({
-                        oldHash: oldHash,
-                        newHash: newHash
+                    this.publish({
+                        path: hash,
+                        parts: hash.split("/")
                     });
                 }
             }, 50);
@@ -262,60 +350,74 @@
         };
         return (...args) => construct.apply({}, args);
     })();
-    window.hashy = HashListener();
+    const MainRouter = Router(HashListener());
     class Main extends Component {
         constructor(props) {
             super(props);
             this.state = state.current;
             state.subscribe((newState) => this.setState(newState));
         }
-        addChar() {
-            const name = prompt(``);
-            if (name === null || name.trim() === ``) {
-                return;
-            }
-            actions$1["chars.$add"](name);
-        }
         render() {
             return React.createElement(
                 "div",
                 {},
-                "test?",
-                React.createElement(
-                    "pre",
-                    {},
-                    JSON.stringify(this.state, null, "  ")
-                ),
-                React.createElement(
-                    "pre",
-                    {},
-                    JSON.stringify(this.props, null, "  ")
-                ),
                 React.createElement(CharList, {
                     chars: this.state.chars
+                }),
+                React.createElement(BagDisplay, {
+                    bags: this.state.bags
                 })
             );
         }
     }
     window.appActions = actions$1;
-    class CharList extends PureComponent {
-        render() {
-            return React.createElement(
-                "div",
-                {},
-                this.props.chars.map((ch) =>
-                    React.createElement("button", {}, ch.name, "(", ch.id, ")")
-                ),
-                React.createElement(
-                    "button",
-                    {
-                        onClick: this.addChar
-                    },
-                    "Add Char"
-                )
-            );
+    const CharList = MainRouter.connect(
+        "/",
+        true
+    )(
+        class CharList extends PureComponent {
+            addChar() {
+                const name = prompt(``);
+                if (name === null || name.trim() === ``) {
+                    return;
+                }
+                actions$1["chars.$add"](name);
+            }
+            render() {
+                return React.createElement(
+                    "div",
+                    {},
+                    React.createElement(
+                        "button",
+                        {
+                            onClick: this.addChar
+                        },
+                        "Add Char"
+                    ),
+                    this.props.chars.map((ch) =>
+                        React.createElement(
+                            "div",
+                            {},
+                            React.createElement(
+                                "a",
+                                {
+                                    href: `#/${ch.id}`
+                                },
+                                ch.name
+                            )
+                        )
+                    )
+                );
+            }
         }
-    }
+    );
+    const BagDisplay = MainRouter.connect("/:bagID")(
+        class BagDisplay extends PureComponent {
+            render() {
+                return React.createElement("div", {}, "Items?!");
+            }
+        }
+    );
     const screens = [CharList].reduce(
         (screens, screen) => ({
             ...screens,

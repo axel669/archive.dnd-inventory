@@ -87,9 +87,6 @@ window.wat = norn(
                 [id]: bags[id].updateItem(item.id, item.info)
             }
         }
-        screen: {
-            initial() => "/chars"
-        }
     }
     {
         "chars.$add"(name) => {name, id: Date.now()}
