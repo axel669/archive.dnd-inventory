@@ -8,11 +8,130 @@ import {state, actions} from "./state.tea"
 
 let {Component, PureComponent} = React
 
-let Router = (routes) =>
-    (Display) => class extends Component {
-        render() => {null}
+let createMatcher = (route) => {
+    let names = []
+    let regexParts = route
+        .replace(/^\//, "")
+        .split("/")
+        .map((check) => {
+            if check.startsWith(":") == true {
+                let name = check[1...]
+                names.push(name)
+                return "(\\w+)"
+            }
+            if check.startsWith("*") == true {
+                let name = check[1...]
+                names.push(name)
+                return "(.+)"
+            }
+            return check
+        })
+    let regex = RegExp("/?${regexParts.join("/")}/?$")
+    // console.log(regex, names)
+    return (route) => {
+        let match = route.match(regex)
+
+        if match == null {
+            return null
+        }
+
+        return names.reduce(
+            (params, name, index) => {
+                ...params
+                [name]: match[index + 1]
+            }
+            {}
+        )
+    }
+}
+
+construct Router {
+    new(routeListener) => {
+        #routeListener = routeListener
     }
 
+    connect(route) => {
+        let matcher = createMatcher(route)
+        return (Component) => class extends React.Component {
+            static displayName = "Router[${Component.displayName ?? Component.name}]"
+
+            constructor(props) => {
+                super(props)
+
+                @state = #store.state
+            }
+
+            componentDidMount() => {
+                #unsub = #routeListener.subscribe(
+                    (newState) => @setState(newState)
+                )
+            }
+            componentWillUnmount() => #ubsub()
+
+            render() => {
+                let params = matcher(@state.path)
+
+                if params == null {
+                    return null
+                }
+                return <Component {...@props} _router={...@state, params} />
+            }
+        }
+    }
+}
+
+construct Dispatcher {
+    new() => {
+        #listeners = Map*()
+    }
+
+    dispatch(message) => {
+        // console.log(#listeners.values())
+        for handler in #listeners.values() {
+            // console.log(message, handler)
+            handler(message)
+        }
+    }
+
+    subscribe(handler) => {
+        let id = "${Date.now()}.${Math.random()}"
+        #listeners.set(id, handler)
+        return () => #listeners.delete(id)
+    }
+}
+
+construct HashListener {
+    new() => {
+        #dispatcher = Dispatcher()
+
+        #currentHash = @hash
+        #interval = setInterval(
+            () => {
+                let hash = @hash
+
+                if hash != #currentHash {
+                    let [oldHash, newHash] = [#currentHash, hash]
+                    #currentHash = hash
+                    @dispatch({
+                        oldHash
+                        newHash
+                    })
+                }
+            }
+            50
+        )
+    }
+
+    get hash() => location.hash.toString().replace(/^#/, "")
+
+    get subscribe() => #dispatcher.subscribe
+    get dispatch() => #dispatcher.dispatch
+}
+
+window.hashy = HashListener()
+// let MainRouter = Router()
+
+// @MainRouter.connect("/*path")
 class Main extends Component {
     constructor(props) => {
         super(props)
@@ -36,20 +155,22 @@ class Main extends Component {
         return <div>
             test?
             <pre>{JSON.stringify(@state, null, "  ")}</pre>
+            <pre>{JSON.stringify(@props, null, "  ")}</pre>
             <CharList chars=@state.chars />
-            <button onClick=@addChar>Add Char</button>
         </div>
     }
 }
 
 window.appActions = actions
 
+// @MainRouter.connect("/chars/:id")
 class CharList extends PureComponent {
     render() => {
         return <div>
             {@props.chars.map(
                 (ch) => <button>{ch.name} ({ch.id})</button>
             )}
+            <button onClick=@addChar>Add Char</button>
         </div>
     }
 }

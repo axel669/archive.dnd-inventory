@@ -189,6 +189,9 @@
                     ...bags,
                     [id]: bags[id].updateItem(item.id, item.info)
                 })
+            },
+            screen: {
+                initial: () => "/chars"
             }
         },
         {
@@ -209,6 +212,57 @@
     const { actions: actions$1, ...state } = wat;
 
     const { Component, PureComponent } = React;
+    const Dispatcher = (() => {
+        const construct = function construct() {
+            const self = {};
+            Object.defineProperties(this, {});
+            this.dispatch = (message) => {
+                for (const handler of self.listeners.values()) {
+                    handler(message);
+                }
+            };
+            this.subscribe = (handler) => {
+                const id = `${Date.now()}.${Math.random()}`;
+                self.listeners.set(id, handler);
+                return () => self.listeners.delete(id);
+            };
+            self.listeners = new Map();
+            return this;
+        };
+        return (...args) => construct.apply({}, args);
+    })();
+    const HashListener = (() => {
+        const construct = function construct() {
+            const self = {};
+            Object.defineProperties(this, {
+                hash: {
+                    get: () => location.hash.toString().replace(/^#/, ``)
+                },
+                subscribe: {
+                    get: () => self.dispatcher.subscribe
+                },
+                dispatch: {
+                    get: () => self.dispatcher.dispatch
+                }
+            });
+            self.dispatcher = Dispatcher();
+            self.currentHash = this.hash;
+            self.interval = setInterval(() => {
+                const hash = this.hash;
+                if (hash !== self.currentHash) {
+                    const [oldHash, newHash] = [self.currentHash, hash];
+                    self.currentHash = hash;
+                    this.dispatch({
+                        oldHash: oldHash,
+                        newHash: newHash
+                    });
+                }
+            }, 50);
+            return this;
+        };
+        return (...args) => construct.apply({}, args);
+    })();
+    window.hashy = HashListener();
     class Main extends Component {
         constructor(props) {
             super(props);
@@ -232,16 +286,14 @@
                     {},
                     JSON.stringify(this.state, null, "  ")
                 ),
+                React.createElement(
+                    "pre",
+                    {},
+                    JSON.stringify(this.props, null, "  ")
+                ),
                 React.createElement(CharList, {
                     chars: this.state.chars
-                }),
-                React.createElement(
-                    "button",
-                    {
-                        onClick: this.addChar
-                    },
-                    "Add Char"
-                )
+                })
             );
         }
     }
@@ -252,11 +304,25 @@
                 "div",
                 {},
                 this.props.chars.map((ch) =>
-                    React.createElement("div", {}, ch.name, "(", ch.id, ")")
+                    React.createElement("button", {}, ch.name, "(", ch.id, ")")
+                ),
+                React.createElement(
+                    "button",
+                    {
+                        onClick: this.addChar
+                    },
+                    "Add Char"
                 )
             );
         }
     }
+    const screens = [CharList].reduce(
+        (screens, screen) => ({
+            ...screens,
+            [screen.name]: screen
+        }),
+        {}
+    );
     ReactDOM.render(
         React.createElement(Main, {}),
         document.querySelector("app-root")
