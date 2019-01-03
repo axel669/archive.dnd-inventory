@@ -1,8 +1,26 @@
 import norn from "@axel669/norn/es6/norn.js"
 import update from "@axel669/immutable-update"
 
+let storage = {
+    read(name, defaultValue) => {
+        let source = localStorage.getItem(name)
+
+        if source == null {
+            return defaultValue
+        }
+        return JSON.parse(source)
+    }
+
+    write(name, value) => {
+        localStorage.setItem(name, JSON.stringify(value))
+    }
+}
+
 construct MapList {
     new(list = [], items = {}) => {
+        if typeof list == "string" {
+            {list, items} = JSON.parse(list)
+        }
         [#list, #items] = [list, items]
     }
 
@@ -27,53 +45,31 @@ construct MapList {
             info: #items[id]
         }
     )
-}
 
-// let translations = {
-//     "en-US": {
-//         name: "English"
-//     }
-// }
-//
-// let language = {
-//     initial() => {
-//         locale: "en-us"
-//         translations: translations."en-US"
-//     }
-//     $change(current, {locale}) => {
-//         if translations[locale] == void {
-//             throw Error*("Language not found")
-//         }
-//         return {
-//             locale
-//             translations: translations[locale]
-//         }
-//     }
-// }
-// let languagePreProcessors = {
-//     "language.$change"(locale) => {locale}
-// }
-//
-// window.wof = norn(
-//     {
-//         language
-//     }
-//     {
-//         ...languagePreProcessors
-//     }
-// )
-// wof.subscribe(
-//     (newState) => console.log(newState)
-// )
+    toJSON() => {
+        list: #list
+        items: #items
+    }
+}
 
 window.wat = norn(
     {
         chars: {
-            initial() => []
+            initial() => storage.read("chars", [])
             $add(chars, {type, ...ch}) => [...chars, ch]
         }
         bags: {
-            initial() => {}
+            initial() => {
+                let source = storage.read("bags", {})
+
+                return Object.keys(source).reduce(
+                    (bags, key) => {
+                        ...bags
+                        [key]: MapList(source[key].list, source[key].list)
+                    }
+                    {}
+                )
+            }
             "chars.$add"(bags, {id}) => {
                 ...bags
                 [id]: MapList()
@@ -90,13 +86,22 @@ window.wat = norn(
     }
     {
         "chars.$add"(name) => {name, id: Date.now()}
-        "bags.$add"(id, item) => {id, item}
+        "bags.$add"(id, name) => {id, item: {name}}
         "bags.$update"(id, item) => {id, item}
     }
 )
-// wat.subscribe(
-//     (newState) => console.log(newState)
-// )
+
+let mut last = wat.current
+wat.subscribe(
+    (newState) => {
+        for key, value of newState {
+            if last[key] != value {
+                storage.write(key, value)
+                console.log("updated:", key)
+            }
+        }
+    }
+)
 
 let {actions, ...state} = wat
 
@@ -104,18 +109,3 @@ export {
     actions,
     state
 }
-
-// let {actions, ...store} = norn({
-//     requests: {
-//         initial() => {}
-//         "$new"(requests) => update(
-//             requests
-//             {["${Date.now()}.$set"]: {}}
-//         )
-//     }
-// })
-//
-// export {
-//     actions,
-//     store
-// }

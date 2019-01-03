@@ -1,0 +1,73 @@
+let createMatcher = (route, exact) => {
+    let names = []
+    let regexParts = route
+        .replace(/^\//, "")
+        .split("/")
+        .map((check) => {
+            if check.startsWith(":") == true {
+                let name = check[1...]
+                names.push(name)
+                return "(\\w+)"
+            }
+            if check.startsWith("*") == true {
+                let name = check[1...]
+                names.push(name)
+                return "(.*)"
+            }
+            return check
+        })
+    let endMatch = (exact == true) ? "$" : ""
+    let regex = RegExp("^/?${regexParts.join("/")}/?${endMatch}")
+    return (route) => {
+        let match = route.match(regex)
+
+        if match == null {
+            return null
+        }
+
+        return names.reduce(
+            (params, name, index) => {
+                ...params
+                [name]: match[index + 1]
+            }
+            {}
+        )
+    }
+}
+
+construct Router {
+    new(routeListener) => {
+        #routeListener = routeListener
+    }
+
+    connect(route, exactMatch = false) => {
+        let matcher = createMatcher(route, exactMatch)
+        return (Component) => class extends React.Component {
+            static displayName = "Router[${Component.displayName ?? Component.name}]"
+
+            constructor(props) => {
+                super(props)
+
+                @state = #routeListener.state
+            }
+
+            componentDidMount() => {
+                #unsub = #routeListener.subscribe(
+                    (newState) => @setState(newState)
+                )
+            }
+            componentWillUnmount() => #ubsub()
+
+            render() => {
+                let params = matcher(@state.path)
+
+                if params == null {
+                    return null
+                }
+                return <Component {...@props} _router={...@state, params} />
+            }
+        }
+    }
+}
+
+export default Router

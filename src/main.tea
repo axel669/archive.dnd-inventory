@@ -1,136 +1,27 @@
-
-// import React, {Component, PureComponent} from "react"
-// import ReactDOM from "react-dom"
+import React, {Component, PureComponent} from "react"
+import ReactDOM from "react-dom"
 
 import norn from "@axel669/norn/es6/norn.js"
 
+import MainRouter from "@router"
 import {state, actions} from "@state"
 
-let {Component, PureComponent} = React
 
-let createMatcher = (route, exact) => {
-    let names = []
-    let regexParts = route
-        .replace(/^\//, "")
-        .split("/")
-        .map((check) => {
-            if check.startsWith(":") == true {
-                let name = check[1...]
-                names.push(name)
-                return "(\\w+)"
+let bind = (target, key, description) => {
+    let {value as unbound, writable, ...desc} = description
+    let mut bound = null
+
+    return {
+        ...desc
+        get() =>* {
+            if bound == null {
+                bound = unbound.bind(@)
             }
-            if check.startsWith("*") == true {
-                let name = check[1...]
-                names.push(name)
-                return "(.*)"
-            }
-            return check
-        })
-    let endMatch = (exact == true) ? "$" : ""
-    let regex = RegExp("^/?${regexParts.join("/")}/?${endMatch}")
-    return (route) => {
-        let match = route.match(regex)
-
-        if match == null {
-            return null
-        }
-
-        return names.reduce(
-            (params, name, index) => {
-                ...params
-                [name]: match[index + 1]
-            }
-            {}
-        )
-    }
-}
-
-construct Router {
-    new(routeListener) => {
-        #routeListener = routeListener
-    }
-
-    connect(route, exactMatch = false) => {
-        let matcher = createMatcher(route, exactMatch)
-        return (Component) => class extends React.Component {
-            static displayName = "Router[${Component.displayName ?? Component.name}]"
-
-            constructor(props) => {
-                super(props)
-
-                @state = #routeListener.state
-            }
-
-            componentDidMount() => {
-                #unsub = #routeListener.subscribe(
-                    (newState) => @setState(newState)
-                )
-            }
-            componentWillUnmount() => #ubsub()
-
-            render() => {
-                let params = matcher(@state.path)
-
-                if params == null {
-                    return null
-                }
-                return <Component {...@props} _router={...@state, params} />
-            }
+            return bound
         }
     }
 }
 
-construct Publisher {
-    new() => {
-        #listeners = Map*()
-    }
-
-    publish(message) => {
-        for handler in #listeners.values() {
-            handler(message)
-        }
-    }
-
-    subscribe(handler) => {
-        let id = "${Date.now()}.${Math.random()}"
-        #listeners.set(id, handler)
-        return () => #listeners.delete(id)
-    }
-}
-
-construct HashListener {
-    new() => {
-        #publisher = Publisher()
-
-        #currentHash = @hash
-        #interval = setInterval(
-            () => {
-                let hash = @hash
-
-                if hash != #currentHash {
-                    #currentHash = hash
-                    @publish({
-                        path: hash
-                        parts: hash.split("/")
-                    })
-                }
-            }
-            50
-        )
-    }
-
-    get hash() => location.hash.toString().replace(/^#/, "")
-
-    get state() => {
-        path: @hash
-        parts: @hash.split("/")
-    }
-
-    get subscribe() => #publisher.subscribe
-    get publish() => #publisher.publish
-}
-
-let MainRouter = Router(HashListener())
 
 class Main extends Component {
     constructor(props) => {
@@ -145,7 +36,7 @@ class Main extends Component {
     render() => {
         return <div>
             <CharList chars=@state.chars />
-            <BagDisplay bags={@state.bags} />
+            <BagDisplay bags=@state.bags />
         </div>
     }
 }
@@ -167,7 +58,7 @@ class CharList extends PureComponent {
         return <div>
             <button onClick=@addChar>Add Char</button>
             {@props.chars.map(
-                (ch) => <div>
+                (ch) => <div key=ch.id>
                     <a href="#/${ch.id}">{ch.name}</a>
                 </div>
             )}
@@ -175,22 +66,58 @@ class CharList extends PureComponent {
     }
 }
 
+let propSort = (...props) =>
+    (first, second) => {
+        for prop in props {
+            let [a, b] = [first[prop], second[prop]]
+            if a < b {
+                return -1
+            }
+            if a > b {
+                return 1
+            }
+        }
+        return 0
+    }
+
+let list = [
+    {name: "Herb", id: 3}
+    {name: "Herb", id: 1}
+    {name: "Herb", id: 2}
+    {name: "Thing", id: 1}
+    {name: "Bag", id: 2}
+]
+console.log(list)
+console.log(list.sort(propSort("name", "id")))
+
 @MainRouter.connect("/:bagID")
 class BagDisplay extends PureComponent {
     render() => {
+        let {bags, _router: {params}} = @props
+        return <Bag bag=bags[params.bagID] bagID=params.bagID />
+    }
+}
+class Bag extends PureComponent {
+    @bind
+    addItem() => {
+        let name = prompt("")
+        if name == null || name.trim() == "" {
+            return
+        }
+
+        actions."bags.$add"(@props.bagID, name)
+    }
+
+    render() => {
+        console.log(@props)
         return <div>
-            Items?!
+            <button onClick=@addItem>Add Item</button>
+            {@props.bag.list.map(
+                (item) => <div key=item.key>{item.name}</div>
+            )}
         </div>
     }
 }
-
-let screens = [CharList].reduce(
-    (screens, screen) => {
-        ...screens
-        [screen.name]: screen
-    }
-    {}
-)
 
 ReactDOM.render(
     <Main />

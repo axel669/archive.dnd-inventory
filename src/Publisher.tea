@@ -1,0 +1,19 @@
+construct Publisher {
+    new() => {
+        #listeners = Map*()
+    }
+
+    publish(message) => {
+        for handler in #listeners.values() {
+            handler(message)
+        }
+    }
+
+    subscribe(handler) => {
+        let id = "${Date.now()}.${Math.random()}"
+        #listeners.set(id, handler)
+        return () => #listeners.delete(id)
+    }
+}
+
+export default Publisher

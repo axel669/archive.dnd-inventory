@@ -1,0 +1,35 @@
+import Publisher from "@publisher"
+
+construct HashListener {
+    new() => {
+        #publisher = Publisher()
+
+        #currentHash = @hash
+        #interval = setInterval(
+            () => {
+                let hash = @hash
+
+                if hash != #currentHash {
+                    #currentHash = hash
+                    @publish({
+                        path: hash
+                        parts: hash.split("/")
+                    })
+                }
+            }
+            50
+        )
+    }
+
+    get hash() => location.hash.toString().replace(/^#/, "")
+
+    get state() => {
+        path: @hash
+        parts: @hash.split("/")
+    }
+
+    get subscribe() => #publisher.subscribe
+    get publish() => #publisher.publish
+}
+
+export default HashListener
