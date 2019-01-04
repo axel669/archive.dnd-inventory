@@ -80,15 +80,15 @@ let propSort = (...props) =>
         return 0
     }
 
-let list = [
-    {name: "Herb", id: 3}
-    {name: "Herb", id: 1}
-    {name: "Herb", id: 2}
-    {name: "Thing", id: 1}
-    {name: "Bag", id: 2}
-]
-console.log(list)
-console.log(list.sort(propSort("name", "id")))
+// let list = [
+//     {name: "Herb", id: 3}
+//     {name: "Herb", id: 1}
+//     {name: "Herb", id: 2}
+//     {name: "Thing", id: 1}
+//     {name: "Bag", id: 2}
+// ]
+// console.log(list)
+// console.log(list.sort(propSort("name", "id")))
 
 @MainRouter.connect("/:bagID")
 class BagDisplay extends PureComponent {

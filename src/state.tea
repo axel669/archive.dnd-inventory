@@ -70,14 +70,14 @@ window.wat = norn(
                     {}
                 )
             }
-            "chars.$add"(bags, {id}) => {
-                ...bags
-                [id]: MapList()
-            }
-            $add(bags, {id, item}) => {
-                ...bags
-                [id]: bags[id].add(item)
-            }
+            "chars.$add"(bags, {id}) => update(
+                bags
+                {["${id}.$set"]: MapList()}
+            )
+            $add(bags, {id, item}) => update(
+                bags
+                {["${id}.$set"]: bags[id].add(item)}
+            )
             $update(bags, {id, item}) => {
                 ...bags
                 [id]: bags[id].updateItem(item.id, item.info)
@@ -90,18 +90,33 @@ window.wat = norn(
         "bags.$update"(id, item) => {id, item}
     }
 )
+window.wat = norn(
+    {
+        initial() => storage.read("chars", [])
+        $addChar(chars, {type, charInfo}) => [
+            ...chars
+            charInfo
+        ]
+    }
+    {
+        $addChar(name) => {name, id: Date.now()}
+    }
+)
 
 let mut last = wat.current
 wat.subscribe(
-    (newState) => {
-        for key, value of newState {
-            if last[key] != value {
-                storage.write(key, value)
-                console.log("updated:", key)
-            }
-        }
-    }
+    (newState) => storage.write("chars", newState)
 )
+// wat.subscribe(
+//     (newState) => {
+//         for key, value of newState {
+//             if last[key] != value {
+//                 storage.write(key, value)
+//                 console.log("updated:", key)
+//             }
+//         }
+//     }
+// )
 
 let {actions, ...state} = wat
 
