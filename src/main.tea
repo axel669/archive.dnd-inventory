@@ -1,22 +1,123 @@
 import React, {Component, PureComponent} from "react"
 import ReactDOM from "react-dom"
 
+import update from "@axel669/immutable-update"
+
 import norn from "@axel669/norn/es6/norn.js"
 
 import MainRouter from "@router"
-import {state, actions} from "@state"
+// import {state, actions} from "@state"
+import Publisher from "@publisher"
+
+let storage = {
+    read(name, defaultValue) => {
+        let source = localStorage.getItem(name)
+
+        if source == null {
+            return defaultValue
+        }
+        return JSON.parse(source)
+    }
+
+    write(name, value) => {
+        localStorage.setItem(name, JSON.stringify(value))
+    }
+}
+
+let state = (() => {
+    let p = Publisher()
+
+    let mut currentState = storage.read(
+        "charList"
+        {
+            list: []
+            items: {}
+        }
+    )
+
+    return {
+        get subscribe() => p.subscribe
+        get current() => currentState
+        publish(changes) => {
+            currentState = update(
+                currentState
+                changes
+            )
+
+            return p.publish(currentState)
+        }
+    }
+})()
+let actions = {
+    chars: {
+        add(name) => {
+            let id = Date.now()
+            return state.publish({
+                "list.$push": id
+                "items.${id}.$set": {
+                    id
+                    name
+                    bags: {
+                        items: {}
+                        list: []
+                    }
+                }
+            })
+        }
+    }
+    bag: {
+        addItem(source, name) => {
+            let id = Date.now()
+
+            return state.publish({
+                "items.${source}.list.$push": id
+                "items.${source}.items.${id}.$set": {
+                    id
+                    name
+                    count: 0
+                    weight: 1
+                }
+            })
+        }
+        addBag(source, name, weight) => {
+            let id = Date.now()
+
+            return state.publish({
+                "items.${source}.list.$push": id
+                "items.${source}.items.${id}.$set": {
+                    name
+                    weight
+                    list: []
+                    items: {}
+                }
+            })
+        }
+    }
+}
+
+state.subscribe(
+    (latest) => storage.write("charList", latest)
+)
 
 
 let bind = (target, key, description) => {
     let {value as unbound, writable, ...desc} = description
-    let mut bound = null
 
     return {
         ...desc
         get() =>* {
-            if bound == null {
-                bound = unbound.bind(@)
-            }
+            let bound = unbound.bind(@)
+
+            Object.defineProperty(
+                @
+                key
+                {
+                    value: bound
+                    writeable: true
+                    configurable: true
+                }
+            )
+
             return bound
         }
     }
@@ -35,8 +136,8 @@ class Main extends Component {
 
     render() => {
         return <div>
-            <CharList chars=@state.chars />
-            <BagDisplay bags=@state.bags />
+            <CharList {...@state} />
+            <BagDisplay chars=@state.items />
         </div>
     }
 }
@@ -51,15 +152,15 @@ class CharList extends PureComponent {
             return
         }
 
-        actions."chars.$add"(name)
+        actions.chars.add(name)
     }
 
     render() => {
         return <div>
             <button onClick=@addChar>Add Char</button>
-            {@props.chars.map(
-                (ch) => <div key=ch.id>
-                    <a href="#/${ch.id}">{ch.name}</a>
+            {@props.list.map(
+                (id) => <div key=id>
+                    <a href="#/${id}">{@props.items[id].name}</a>
                 </div>
             )}
         </div>
@@ -80,21 +181,31 @@ let propSort = (...props) =>
         return 0
     }
 
-// let list = [
-//     {name: "Herb", id: 3}
-//     {name: "Herb", id: 1}
-//     {name: "Herb", id: 2}
-//     {name: "Thing", id: 1}
-//     {name: "Bag", id: 2}
-// ]
-// console.log(list)
-// console.log(list.sort(propSort("name", "id")))
-
-@MainRouter.connect("/:bagID")
+@MainRouter.connect("/:charID")
 class BagDisplay extends PureComponent {
+    @bind
+    addBag() => {
+        let {chars, _router: {params}} = @props
+        let name = prompt("")
+        if name == null || name.trim() == "" {
+            return
+        }
+
+        actions.bag.addBag("${params.charID}.bags", name, null)
+    }
+
     render() => {
-        let {bags, _router: {params}} = @props
-        return <Bag bag=bags[params.bagID] bagID=params.bagID />
+        let {chars, _router: {params}} = @props
+        let {bags, name} = chars[params.charID]
+
+        return <div>
+            <div>{name}</div>
+            <button onClick=@addBag>Add Bag</button>
+            {bags.list.map(
+                (bagID) => <Bag key=bagID source="${params.charID}.bags.items.${bagID}" {...bags.items[bagID]} />
+            )}
+        </div>
+        // return <Bag bag=bags[params.bagID] bagID=params.bagID />
     }
 }
 class Bag extends PureComponent {
@@ -105,16 +216,42 @@ class Bag extends PureComponent {
             return
         }
 
-        actions."bags.$add"(@props.bagID, name)
+        actions.bag.addItem(@props.source, name)
+    }
+
+    @bind
+    itemMap(id) => {
+        let item = @props.items[id]
+
+        return <tr key=id>
+            <td>
+                {item.name}
+            </td>
+            <td>
+                {item.count}
+            </td>
+            <td>
+                {item.weight * item.count}
+            </td>
+        </tr>
     }
 
     render() => {
-        console.log(@props)
-        return <div>
+        let {list, items, name} = @props
+
+        return <div style={border: "1px solid black"}>
+            <div>{name}</div>
             <button onClick=@addItem>Add Item</button>
-            {@props.bag.list.map(
-                (item) => <div key=item.key>{item.name}</div>
-            )}
+            <table style={width: "100%"}>
+                <tbody>
+                    <tr>
+                        <th>Item</th>
+                        <th style={width: 40}>Count</th>
+                        <th style={width: 40}>Weight</th>
+                    </tr>
+                    {list.map(@itemMap)}
+                </tbody>
+            </table>
         </div>
     }
 }

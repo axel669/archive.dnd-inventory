@@ -4,142 +4,71 @@
     var React$1__default = 'default' in React$1 ? React$1['default'] : React$1;
     ReactDOM = ReactDOM && ReactDOM.hasOwnProperty('default') ? ReactDOM['default'] : ReactDOM;
 
-    const createReducer = (desc) => {
-        var ref0;
-
-        const reducers = [];
-        for (const key of Object.keys((ref0 = desc))) {
-            const map = ref0[key];
-            const reducer = (() => {
-                if (typeof map === "function") {
-                    return map;
-                } else {
-                    return createReducer(map);
-                }
-            })();
-            reducers.push([key, reducer]);
-        }
-        return async (state, action) => {
-            const newState = {};
-            for (const [key, reducer] of reducers) {
-                newState[key] = await reducer(state[key], action);
+    const actions = {
+        $set: (source, value) => value,
+        $unset: (source, names) => {
+            const copy = {
+                ...source
+            };
+            for (const name of names) {
+                delete copy[name];
             }
-            return newState;
-        };
+            return copy;
+        },
+        $push: (source, value) => [...source, value],
+        $append: (source, value) => [...source, ...value],
+        $apply: (source, func) => func(source),
+        $filter: (source, condition) => source.filter(condition),
+        $merge: (source, addition) => ({
+            ...source,
+            ...addition
+        })
     };
-    const generateStateInfo = (source, desc) => {
-        var ref0, ref1;
-
-        const reducers = {};
-        const initialState = {};
-        let definedActions = new Set();
-        for (const key of Object.keys((ref0 = desc))) {
-            const info = ref0[key];
-            const path = source !== null ? `${source}.${key}` : key;
-            const initial = info.initial;
-            if (initial === undefined) {
-                const child = generateStateInfo(path, info);
-                [reducers[key], initialState[key]] = child;
-                definedActions = new Set([...definedActions, ...child[2]]);
-            } else {
-                const actionHandlers = {};
-                for (const action of Object.keys((ref1 = info))) {
-                    const func = ref1[action];
-                    actionHandlers[action] = func;
-                    if (action.startsWith("$") === true) {
-                        definedActions.add(`${path}.${action}`);
-                    }
-                    if (action.indexOf("$") > 0) {
-                        definedActions.add(action);
-                    }
-                }
-                initialState[key] =
-                    typeof initial === "function" ? initial() : initial;
-                reducers[key] = async (state, action) => {
-                    let actions = [action];
-                    if (action.type === "batch") {
-                        actions = action.actions;
-                    }
-                    let newState = state;
-                    for (const action of actions) {
-                        let type = action.type;
-                        if (type.startsWith(`${path}.`) === true) {
-                            type = type.slice(path.length + 1, undefined);
-                        }
-                        const reducer = actionHandlers[type];
-                        if (reducer !== undefined) {
-                            newState = await reducer(newState, action);
-                        }
-                    }
-                    return newState;
-                };
-            }
+    const internal_copyObject = (obj, createIfVoid = false) => {
+        if (obj === undefined && createIfVoid === true) {
+            return {};
         }
-        return [reducers, initialState, definedActions];
-    };
-    const createState = (desc, actionProcessors = {}) => {
-        const [reducers, initialState, definedActions] = generateStateInfo(
-            null,
-            desc
-        );
-        const reducer = createReducer(reducers);
-        const dispatch = async (action) => {
-            currentState = await reducer(currentState, action);
-            for (const listener of subscriptions.values()) {
-                listener(currentState);
-            }
-            return currentState;
-        };
-        const actions = [...definedActions].reduce(
-            (actions, type) => {
-                var nullref0;
-
-                const preProcessor =
-                    (nullref0 = actionProcessors[type]) != null
-                        ? nullref0
-                        : (i) => i;
-                return {
-                    ...actions,
-                    [type]: (...args) =>
-                        dispatch({
-                            type: type,
-                            ...preProcessor(...args)
-                        })
-                };
-            },
-            {
-                $batch: (...pairs) =>
-                    dispatch({
-                        type: "batch",
-                        actions: pairs.map(([type, data]) => ({
-                            type: type,
-                            ...data
-                        }))
-                    })
-            }
-        );
-        let currentState = initialState;
-        const subscriptions = new Map();
-        const subscribe = (listener) => {
-            const key = `${Math.random()}:${Date.now()}`;
-            subscriptions.set(key, listener);
-            return () => subscriptions.delete(key);
-        };
-        const validActions = [...definedActions].sort();
+        if (typeof obj !== "object" || obj === null) {
+            return obj;
+        }
+        if (obj instanceof Map) {
+            return new Map(obj);
+        }
+        if (obj instanceof Set) {
+            return new Set(obj);
+        }
+        if (obj.constructor !== Object) {
+            return obj;
+        }
         return {
-            get state() {
-                return currentState;
-            },
-            get current() {
-                return currentState;
-            },
-            actions: actions,
-            subscribe: subscribe,
-            get validActions() {
-                return [...validActions];
-            }
+            ...obj
         };
     };
+    const internal_setValues = (dest, key, n, value, create) => {
+        const name = key[n];
+        if (n === key.length - 1) {
+            return actions[name](dest, value);
+        } else {
+            dest = internal_copyObject(dest, create);
+            dest[name] = internal_setValues(dest[name], key, n + 1, value, create);
+        }
+        return dest;
+    };
+    const update = (source, obj, createIfUndefined = false) =>
+        Object.keys(obj).reduce(
+            (source, key) =>
+                internal_setValues(
+                    source,
+                    key.split("."),
+                    0,
+                    obj[key],
+                    createIfUndefined
+                ),
+            source
+        );
+    update.actions = actions;
+
+    var update_1 = update;
 
     const Publisher = (() => {
         const construct = function construct() {
@@ -253,7 +182,7 @@
                                 );
                             }
                             componentWillUnmount() {
-                                return self.ubsub();
+                                return self.unsub();
                             }
                             render() {
                                 const params = matcher(this.state.path);
@@ -286,6 +215,7 @@
 
     var MainRouter = Router(HashListener());
 
+    var __class0;
     const storage = {
         read: (name, defaultValue) => {
             const source = localStorage.getItem(name);
@@ -298,115 +228,81 @@
             localStorage.setItem(name, JSON.stringify(value));
         }
     };
-    const MapList = (() => {
-        const construct = function construct(list = [], items = {}) {
-            const self = {};
-            Object.defineProperties(this, {
-                list: {
-                    get: () =>
-                        self.list.map((id) => ({
-                            id: id,
-                            info: self.items[id]
-                        }))
-                }
-            });
-            this.add = (item) => {
-                const id = `${Date.now()}.${Math.random()}`;
-                return MapList([...self.list, id], {
-                    ...self.items,
-                    [id]: item
-                });
-            };
-            this.updateItem = (id, newItem) =>
-                MapList(self.list, {
-                    ...self.items,
-                    [id]: newItem
-                });
-            this.item = (id) => self.items[id];
-            this.index = (index) => self.items[self.list[index]];
-            this.toJSON = () => ({
-                list: self.list,
-                items: self.items
-            });
-            if (typeof list === "string") {
-                ({ list, items } = JSON.parse(list));
-            }
-            [self.list, self.items] = [list, items];
-            return this;
-        };
-        return (...args) => construct.apply({}, args);
-    })();
-    window.wat = createState(
-        {
-            chars: {
-                initial: () => storage.read("chars", []),
-                $add: (chars, { type, ...ch }) => [...chars, ch]
+    const state = (() => {
+        const p = Publisher();
+        let currentState = storage.read("charList", {
+            list: [],
+            items: {}
+        });
+        return {
+            get subscribe() {
+                return p.subscribe;
             },
-            bags: {
-                initial: () => {
-                    const source = storage.read("bags", {});
-                    return Object.keys(source).reduce(
-                        (bags, key) => ({
-                            ...bags,
-                            [key]: MapList(source[key].list, source[key].list)
-                        }),
-                        {}
-                    );
-                },
-                "chars.$add": (bags, { id }) => ({
-                    ...bags,
-                    [id]: MapList()
-                }),
-                $add: (bags, { id, item }) => ({
-                    ...bags,
-                    [id]: bags[id].add(item)
-                }),
-                $update: (bags, { id, item }) => ({
-                    ...bags,
-                    [id]: bags[id].updateItem(item.id, item.info)
-                })
+            get current() {
+                return currentState;
+            },
+            publish: (changes) => {
+                currentState = update_1(currentState, changes);
+                return p.publish(currentState);
+            }
+        };
+    })();
+    const actions$1 = {
+        chars: {
+            add: (name) => {
+                const id = Date.now();
+                return state.publish({
+                    "list.$push": id,
+                    [`items.${id}.$set`]: {
+                        id: id,
+                        name: name,
+                        bags: {
+                            items: {},
+                            list: []
+                        }
+                    }
+                });
             }
         },
-        {
-            "chars.$add": (name) => ({
-                name: name,
-                id: Date.now()
-            }),
-            "bags.$add": (id, name) => ({
-                id: id,
-                item: {
-                    name: name
-                }
-            }),
-            "bags.$update": (id, item) => ({
-                id: id,
-                item: item
-            })
-        }
-    );
-    let last = wat.current;
-    wat.subscribe((newState) => {
-        var ref0;
-
-        for (const key of Object.keys((ref0 = newState))) {
-            const value = ref0[key];
-            if (last[key] !== value) {
-                storage.write(key, value);
-                console.log("updated:", key);
+        bag: {
+            addItem: (source, name) => {
+                const id = Date.now();
+                return state.publish({
+                    [`items.${source}.list.$push`]: id,
+                    [`items.${source}.items.${id}.$set`]: {
+                        id: id,
+                        name: name,
+                        count: 0,
+                        weight: 1
+                    }
+                });
+            },
+            addBag: (source, name, weight) => {
+                const id = Date.now();
+                return state.publish({
+                    [`items.${source}.list.$push`]: id,
+                    [`items.${source}.items.${id}.$set`]: {
+                        name: name,
+                        weight: weight,
+                        list: [],
+                        items: {}
+                    }
+                });
             }
         }
-    });
-    const { actions: actions$1, ...state } = wat;
-
+    };
+    state.subscribe((latest) => storage.write("charList", latest));
     const bind = (target, key, description) => {
         const { value: unbound, writable, ...desc } = description;
-        let bound = null;
         return {
             ...desc,
             get: function() {
-                if (bound === null) {
-                    bound = unbound.bind(this);
-                }
+                const bound = unbound.bind(this);
+                Object.defineProperty(this, key, {
+                    value: bound,
+                    writeable: true,
+                    configurable: true
+                });
                 return bound;
             }
         };
@@ -422,10 +318,10 @@
                 "div",
                 {},
                 React$1__default.createElement(CharList, {
-                    chars: this.state.chars
+                    ...this.state
                 }),
                 React$1__default.createElement(BagDisplay, {
-                    bags: this.state.bags
+                    chars: this.state.items
                 })
             );
         }
@@ -441,7 +337,7 @@
                 if (name === null || name.trim() === ``) {
                     return;
                 }
-                actions$1["chars.$add"](name);
+                actions$1.chars.add(name);
             }
             render() {
                 return React$1__default.createElement(
@@ -454,18 +350,18 @@
                         },
                         "Add Char"
                     ),
-                    this.props.chars.map((ch) =>
+                    this.props.list.map((id) =>
                         React$1__default.createElement(
                             "div",
                             {
-                                key: ch.id
+                                key: id
                             },
                             React$1__default.createElement(
                                 "a",
                                 {
-                                    href: `#/${ch.id}`
+                                    href: `#/${id}`
                                 },
-                                ch.name
+                                this.props.items[id].name
                             )
                         )
                     )
@@ -473,55 +369,55 @@
             }
         }
     );
-    const propSort = (...props) => (first, second) => {
-        for (const prop of props) {
-            const [a, b] = [first[prop], second[prop]];
-            if (a < b) {
-                return -1;
-            }
-            if (a > b) {
-                return 1;
-            }
-        }
-        return 0;
-    };
-    const list = [
-        {
-            name: "Herb",
-            id: 3
-        },
-        {
-            name: "Herb",
-            id: 1
-        },
-        {
-            name: "Herb",
-            id: 2
-        },
-        {
-            name: "Thing",
-            id: 1
-        },
-        {
-            name: "Bag",
-            id: 2
-        }
-    ];
-    console.log(list);
-    console.log(list.sort(propSort("name", "id")));
-    const BagDisplay = MainRouter.connect("/:bagID")(
-        class BagDisplay extends React$1.PureComponent {
-            render() {
+    const BagDisplay = MainRouter.connect("/:charID")(
+        (__class0 = class BagDisplay extends React$1.PureComponent {
+            addBag() {
                 const {
-                    bags,
+                    chars,
                     _router: { params }
                 } = this.props;
-                return React$1__default.createElement(Bag, {
-                    bag: bags[params.bagID],
-                    bagID: params.bagID
-                });
+                const name = prompt(``);
+                if (name === null || name.trim() === ``) {
+                    return;
+                }
+                actions$1.bag.addBag(`${params.charID}.bags`, name, null);
             }
-        }
+            render() {
+                const {
+                    chars,
+                    _router: { params }
+                } = this.props;
+                const { bags, name } = chars[params.charID];
+                return React$1__default.createElement(
+                    "div",
+                    {},
+                    React$1__default.createElement("div", {}, name),
+                    React$1__default.createElement(
+                        "button",
+                        {
+                            onClick: this.addBag
+                        },
+                        "Add Bag"
+                    ),
+                    bags.list.map((bagID) =>
+                        React$1__default.createElement(Bag, {
+                            key: bagID,
+                            source: `${params.charID}.bags.items.${bagID}`,
+                            ...bags.items[bagID]
+                        })
+                    )
+                );
+            }
+        })
+    );
+    Object.defineProperty(
+        __class0.prototype,
+        "addBag",
+        [bind].reduceRight(
+            (descriptor, decorator) =>
+                decorator(__class0.prototype, "addBag", descriptor),
+            Object.getOwnPropertyDescriptor(__class0.prototype, "addBag")
+        )
     );
     class Bag extends React$1.PureComponent {
         addItem() {
@@ -529,13 +425,30 @@
             if (name === null || name.trim() === ``) {
                 return;
             }
-            actions$1["bags.$add"](this.props.bagID, name);
+            actions$1.bag.addItem(this.props.source, name);
+        }
+        itemMap(id) {
+            const item = this.props.items[id];
+            return React$1__default.createElement(
+                "tr",
+                {
+                    key: id
+                },
+                React$1__default.createElement("td", {}, item.name),
+                React$1__default.createElement("td", {}, item.count),
+                React$1__default.createElement("td", {}, item.weight * item.count)
+            );
         }
         render() {
-            console.log(this.props);
+            const { list, items, name } = this.props;
             return React$1__default.createElement(
                 "div",
-                {},
+                {
+                    style: {
+                        border: "1px solid black"
+                    }
+                },
+                React$1__default.createElement("div", {}, name),
                 React$1__default.createElement(
                     "button",
                     {
@@ -543,13 +456,40 @@
                     },
                     "Add Item"
                 ),
-                this.props.bag.list.map((item) =>
+                React$1__default.createElement(
+                    "table",
+                    {
+                        style: {
+                            width: "100%"
+                        }
+                    },
                     React$1__default.createElement(
-                        "div",
-                        {
-                            key: item.key
-                        },
-                        item.name
+                        "tbody",
+                        {},
+                        React$1__default.createElement(
+                            "tr",
+                            {},
+                            React$1__default.createElement("th", {}, "Item"),
+                            React$1__default.createElement(
+                                "th",
+                                {
+                                    style: {
+                                        width: 40
+                                    }
+                                },
+                                "Count"
+                            ),
+                            React$1__default.createElement(
+                                "th",
+                                {
+                                    style: {
+                                        width: 40
+                                    }
+                                },
+                                "Weight"
+                            )
+                        ),
+                        list.map(this.itemMap)
                     )
                 )
             );
@@ -562,6 +502,15 @@
             (descriptor, decorator) =>
                 decorator(Bag.prototype, "addItem", descriptor),
             Object.getOwnPropertyDescriptor(Bag.prototype, "addItem")
+        )
+    );
+    Object.defineProperty(
+        Bag.prototype,
+        "itemMap",
+        [bind].reduceRight(
+            (descriptor, decorator) =>
+                decorator(Bag.prototype, "itemMap", descriptor),
+            Object.getOwnPropertyDescriptor(Bag.prototype, "itemMap")
         )
     );
     ReactDOM.render(
