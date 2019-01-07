@@ -56,7 +56,7 @@ construct Router {
                     (newState) => @setState(newState)
                 )
             }
-            componentWillUnmount() => #ubsub()
+            componentWillUnmount() => #unsub()
 
             render() => {
                 let params = matcher(@state.path)
